@@ -19,21 +19,19 @@ struct Lines {
 }
 
 fn setup(mut cmd: Commands) {
-    cmd.spawn(Camera2dBundle::default());
+    cmd.spawn(Camera2d::default());
 
     macro_rules! text {
-        ($text: expr, $x: expr, $y: expr) => {
-            cmd.spawn(Text2dBundle {
-                text: Text::from_section(
-                    $text,
-                    TextStyle {
-                        color: Color::WHITE.with_alpha(0.8),
-                        ..default()
-                    },
-                ),
-                transform: Transform::from_xyz($x, $y, 0.),
-                ..default()
-            })
+        ($text:expr, $x:expr, $y:expr) => {
+            cmd.spawn((
+                Text::new($text),
+                TextFont {
+                    font_size: FontSize::Px(20.0),
+                    ..default()
+                },
+                TextColor(Color::WHITE.with_alpha(0.8)),
+                Transform::from_xyz($x, $y, 0.0),
+            ))
         };
     }
 
@@ -71,15 +69,15 @@ fn update(mut lines: ResMut<Lines>, time: Res<Time>) {
     const LINE_MAX_LEN: usize = 200;
 
     lines.wave.push(Vec2::new(
-        time.elapsed_seconds(),
-        (time.elapsed_seconds() * 2.).sin(),
+        time.elapsed_secs(),
+        (time.elapsed_secs() * 2.).sin(),
     ));
     if lines.wave.len() > LINE_MAX_LEN {
         lines.wave.remove(0);
     }
 
     lines.spikey.push(Vec2::new(
-        time.elapsed_seconds(),
+        time.elapsed_secs(),
         rand::Rng::sample(&mut rand::thread_rng(), rand_distr::StandardNormal),
     ));
     if lines.spikey.len() > LINE_MAX_LEN {
@@ -97,9 +95,11 @@ fn draw(lines: Res<Lines>, mut gizmos: Gizmos, mut text: Query<&mut Text>) {
 
         let bounds = Rect::from_center_size(Vec2::new(-400., 200.), Vec2::new(200., 200.));
 
-        let [mut min_text, mut max_text] = text.many_mut(lines.wave_y_scale_ui);
-        min_text.sections[0].value = format!("{:.1}", min_xy.y);
-        max_text.sections[0].value = format!("{:.1}", max_xy.y);
+        let Ok([mut min_text, mut max_text]) = text.get_many_mut(lines.wave_y_scale_ui) else {
+            return;
+        };
+        min_text.0 = format!("{:.1}", min_xy.y);
+        max_text.0 = format!("{:.1}", max_xy.y);
 
         draw_bounds(&mut gizmos, bounds);
 
@@ -166,9 +166,11 @@ fn draw(lines: Res<Lines>, mut gizmos: Gizmos, mut text: Query<&mut Text>) {
 
         let bounds = Rect::from_center_size(Vec2::new(-400., -200.), Vec2::new(200., 200.));
 
-        let [mut min_text, mut max_text] = text.many_mut(lines.spikey_y_scale_ui);
-        min_text.sections[0].value = format!("{:.1}", min_xy.y);
-        max_text.sections[0].value = format!("{:.1}", max_xy.y);
+        let Ok([mut min_text, mut max_text]) = text.get_many_mut(lines.spikey_y_scale_ui) else {
+            return;
+        };
+        min_text.0 = format!("{:.1}", min_xy.y);
+        max_text.0 = format!("{:.1}", max_xy.y);
 
         draw_bounds(&mut gizmos, bounds);
 
@@ -229,9 +231,8 @@ fn draw(lines: Res<Lines>, mut gizmos: Gizmos, mut text: Query<&mut Text>) {
 
 fn draw_bounds(gizmos: &mut Gizmos, bounds: Rect) {
     gizmos.rect_2d(
-        bounds.center(),
-        0.,
+        Isometry2d::from_translation(bounds.center()),
         bounds.size() + Vec2::splat(2.0),
-        Color::WHITE.with_alpha(0.1),
+        Color::WHITE,
     );
 }

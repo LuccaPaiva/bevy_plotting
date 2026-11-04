@@ -24,7 +24,7 @@ fn setup(mut cmd: Commands) {
     macro_rules! text {
         ($text:expr, $x:expr, $y:expr) => {
             cmd.spawn((
-                Text::new($text),
+                Text2d::new($text),
                 TextFont {
                     font_size: FontSize::Px(20.0),
                     ..default()
@@ -85,7 +85,7 @@ fn update(mut lines: ResMut<Lines>, time: Res<Time>) {
     }
 }
 
-fn draw(lines: Res<Lines>, mut gizmos: Gizmos, mut text: Query<&mut Text>) {
+fn draw(lines: Res<Lines>, mut gizmos: Gizmos, mut text: Query<&mut Text2d>) {
     // Wave derived bounds
     {
         let point_count = 50;
